@@ -2,10 +2,10 @@ import * as THREE from "three";
 import PERLIN from "./perlin";
 import { MouseInfo } from "./utils";
 
+const DEFAULT_SIZE = 25;
+
 const material = new THREE.MeshBasicMaterial({
   color: 0x0000ff,
-  depthWrite: false,
-  side: THREE.DoubleSide,
 });
 
 export function setupBrush(mouse: MouseInfo): {
@@ -16,14 +16,14 @@ export function setupBrush(mouse: MouseInfo): {
   brush.setFromPoints(genBrush([0, 0]));
   const geometry = new THREE.ShapeGeometry(brush);
   const mesh = new THREE.Mesh(geometry, material);
-  // mesh.visible = false;
+  mesh.visible = false;
 
   function update() {
     // Update brush based on mouse
     if (mouse.isDown) {
-      // mesh.visible = true;
+      mesh.visible = true;
     } else {
-      // mesh.visible = false;
+      mesh.visible = false;
     }
     mesh.geometry.setFromPoints(genBrush([mouse.position.x, mouse.position.y]));
   }
@@ -33,7 +33,7 @@ export function setupBrush(mouse: MouseInfo): {
 // generate new array of Vector2 points for brush
 export function genBrush(
   center: [number, number],
-  size = 100
+  size = DEFAULT_SIZE
 ): THREE.Vector2[] {
   const points = [];
   // create COUNT points for circle

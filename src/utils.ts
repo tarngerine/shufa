@@ -66,3 +66,29 @@ export function setupMouse(renderer: THREE.WebGLRenderer): MouseInfo {
   addListeners();
   return mouse;
 }
+
+// Create data texture
+export function createDataTexture(sizes: {
+  width: number;
+  height: number;
+}): THREE.DataTexture {
+  const size = sizes.width * sizes.height;
+  const data = new Uint8Array(4 * size); // 4 for RGBA
+
+  for (let i = 0; i < size; i++) {
+    const stride = i * 4;
+    data[stride] = 0; // r
+    data[stride + 1] = 0; // g
+    data[stride + 2] = 0; // b
+    data[stride + 3] = 0; // a
+  }
+
+  const dt = new THREE.DataTexture(
+    data,
+    sizes.width,
+    sizes.height,
+    THREE.RGBAFormat
+  );
+  dt.needsUpdate = true;
+  return dt;
+}

@@ -1607,10 +1607,10 @@ validate-npm-package-license@^3.0.1:
     spdx-correct "^3.0.0"
     spdx-expression-parse "^3.0.0"
 
-vite-plugin-string@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/vite-plugin-string/-/vite-plugin-string-1.0.1.tgz#56fc750375742c7f53fcbd555617f61454039d21"
-  integrity sha512-bi8v/lqWCRORD+bT+tFPJ7meWjwTU9x925grw+etOUGitHKZk8hNhxFulxDDsZiyS96bKNWiGEAvD9mkkZ7+CA==
+vite-plugin-string@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/vite-plugin-string/-/vite-plugin-string-1.1.1.tgz#4c8cc898a4b8e336a0e3903d8a29bf75b7a0f2b1"
+  integrity sha512-d4R8wkPbgMRcDwhsbnSAxZHRfsWBvB4wr0eFUHX2AoZrHnp49FSdbud3PzXidklmHPXkjFlbUkpM9oorvegIZg==
   dependencies:
     "@rollup/pluginutils" "^4.1.0"
 

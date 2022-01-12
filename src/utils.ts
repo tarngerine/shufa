@@ -28,6 +28,7 @@ export function setupOrthoScene(): {
     canvas,
     preserveDrawingBuffer: true,
     antialias: true,
+    alpha: true,
   });
 
   renderer.sortObjects = false;

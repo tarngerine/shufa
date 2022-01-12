@@ -1,10 +1,9 @@
 {
-  "name": "vite-threejs-ts",
-  "description": "A vite Three JS starter with linting and ts",
+  "name": "shufa",
+  "description": "",
   "author": {
-    "name": "Gian F. Olivieri",
-    "email": "gian.olivieri@gmail.com",
-    "url": "https://giank.us"
+    "name": "Julius Tarng",
+    "email": "julius@tarng.com"
   },
   "version": "0.0.1",
   "scripts": {
@@ -13,7 +12,7 @@
     "serve": "vite preview",
     "lint": "eslint ./src/**.ts --fix"
   },
-  "license": "Unlicense",
+  "license": "MIT",
   "devDependencies": {
     "@ehutch79/vite-eslint": "^0.0.1",
     "@types/dat.gui": "^0.7.7",

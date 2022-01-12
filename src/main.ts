@@ -1,52 +1,33 @@
 import debounce from "lodash.debounce";
 import * as THREE from "three";
 import { createDataTexture, setupMouse, setupOrthoScene } from "./utils";
-import fragment from "./shaders/fragment.glsl";
 import vertex from "./shaders/vertex.glsl";
+import merge from "./shaders/merge.glsl";
 import "./style.css";
 import { setupBrush } from "./brush";
+import { createPlaneMesh } from "./planeMesh";
 
 const sizes = {
   width: window.innerWidth,
   height: window.innerHeight,
 };
 const { scene, camera, renderer } = setupOrthoScene();
+scene.background = null;
 const mouse = setupMouse(renderer);
 
-const material = new THREE.MeshBasicMaterial({
-  color: 0x0000ff,
-  side: THREE.DoubleSide,
-});
-// import { CopyShader } from "./shader";
-const brush = setupBrush(mouse);
-scene.add(brush.mesh);
-
-// const buffer = new THREE.WebGLRenderTarget(sizes.width, sizes.height);
-const plane = new THREE.PlaneGeometry(sizes.width, sizes.height);
-// const bufferMaterial = new THREE.RawShaderMaterial({
-//   uniforms: {
-//     texture1: {
-//       value: buffer.texture,
-//     },
-//     u_time: { value: 0 },
-//   },
-//   vertexShader: vertex,
-//   fragmentShader: fragment,
+// const material = new THREE.MeshBasicMaterial({
+//   color: 0x0000ff,
+//   side: THREE.DoubleSide,
 // });
+const brush = setupBrush(mouse);
+
 const bufferMaterial = new THREE.MeshBasicMaterial({
   map: null,
   side: THREE.DoubleSide,
 });
-bufferMaterial.needsUpdate = true;
-const bufferMesh = new THREE.Mesh(plane, bufferMaterial);
-bufferMesh.translateX(sizes.width / 2);
-bufferMesh.translateY(sizes.height / 2);
-// bufferMesh.translateZ(-1); // Move slightly behind brush
-// bufferMesh.scale.x = 0.5;
-// bufferMesh.scale.y = 0.5;
-bufferMesh.rotation.z = Math.PI;
-bufferMesh.rotation.y = Math.PI;
+const bufferMesh = createPlaneMesh(sizes, bufferMaterial);
 scene.add(bufferMesh);
+scene.add(brush.line);
 
 // Set up two textures for paper
 // one is previous and one is next
@@ -63,13 +44,6 @@ const options = {
 const rt1 = new THREE.WebGLRenderTarget(sizes.width, sizes.height, options);
 const rt2 = new THREE.WebGLRenderTarget(sizes.width, sizes.height, options);
 
-// const tex = new THREE.DataTexture(
-//   new Float32Array(sizes.width * sizes.height * 4),
-//   sizes.width,
-//   sizes.height,
-//   THREE.RGBAFormat,
-//   THREE.FloatType
-// );
 const tex = createDataTexture(sizes);
 tex.needsUpdate = true;
 tex.flipY = false;
@@ -88,31 +62,16 @@ const mergeMaterial = new THREE.RawShaderMaterial({
     },
   },
   vertexShader: vertex,
-  fragmentShader: `
-    #ifdef GL_ES
-    precision mediump float;
-    #endif
-    uniform sampler2D texture1;
-    uniform sampler2D texture2;
-    varying vec2 vUv;
-    void main() {
-      vec4 texel1 = texture2D(texture1, vUv);
-      vec4 texel2 = texture2D(texture2, vUv);
-      // add the two textures together
-      gl_FragColor = min(texel1 + texel2, 1.0);
-    }
-  `,
+  fragmentShader: merge,
 });
-const mergeMesh = new THREE.Mesh(new THREE.PlaneGeometry(), mergeMaterial);
-mergeMesh.scale.set(sizes.width, sizes.height, 1);
-mergeMesh.position.set(sizes.width / 2, sizes.height / 2, 1);
-mergeMesh.rotation.z = Math.PI;
-mergeMesh.rotation.y = Math.PI;
+const mergeMesh = createPlaneMesh(sizes, mergeMaterial);
 const mergeScene = new THREE.Scene();
+mergeScene.background = null;
 mergeScene.add(mergeMesh);
 
 // add brush to brush scene and RT
 const brushScene = new THREE.Scene();
+brushScene.background = null;
 brushScene.add(brush.mesh);
 const brushRT = new THREE.WebGLRenderTarget(sizes.width, sizes.height, options);
 
@@ -128,9 +87,6 @@ const mergeRT = {
 
 const render = () => {
   brush.update();
-  // bufferMesh.material.uniforms.u_time.value += 0.1;
-  // renderer.setRenderTarget(buffer);
-  // renderer.render(scene, camera);
 
   // render brush to brush scene
   renderer.setRenderTarget(brushRT);
@@ -145,7 +101,6 @@ const render = () => {
   // preview the newly rendered next RT's texture in base scene
   const latestTexture = mergeRT.next.texture;
   bufferMesh.material.map = latestTexture;
-  bufferMesh.material.needsUpdate = true;
   renderer.setRenderTarget(null);
   renderer.render(scene, camera);
 

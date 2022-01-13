@@ -27,15 +27,11 @@ export function setupBrush(mouse: MouseInfo): {
   // We use a trail to interpolate gaps between sampling frames for a smooth brush stroke
   const trail: THREE.Vector2[] = [];
   const line = createLine();
+  line.visible = false; // DEBUG
   let needsReset = false;
 
   // Runs once a frame
   function update() {
-    // Add latest mouse position to trail
-    // TODO: this is outside of isDown because we want to immediately start drawing on the first frame
-    trail.push(new THREE.Vector2(mouse.position.x, mouse.position.y));
-    if (trail.length > TRAIL_LENGTH) trail.shift();
-
     // Update brush based on mouse
     if (mouse.isDown) {
       needsReset = true;
@@ -44,6 +40,10 @@ export function setupBrush(mouse: MouseInfo): {
       mesh.geometry.setFromPoints(
         genBrush([mouse.position.x, mouse.position.y]) // mouse position only for perlin offset, we apply matrix transform to each instance below
       );
+
+      // Add latest mouse position to trail
+      trail.push(new THREE.Vector2(mouse.position.x, mouse.position.y));
+      if (trail.length > TRAIL_LENGTH) trail.shift();
 
       const resampled = resampleLineBySpacing(trail, TRAIL_RESAMPLE_SPACING);
       line.geometry.setFromPoints(resampled); // DEBUG
@@ -65,7 +65,7 @@ export function setupBrush(mouse: MouseInfo): {
         trail.length = 0; // Clear trail
         // Move meshes offscreen so next brush stroke start it doesnt keep the previous stroke's instance positions
         for (let i = 0; i < mesh.count; i++) {
-          dummyObject.position.set(0, 0, 0);
+          dummyObject.position.set(-DEFAULT_SIZE, -DEFAULT_SIZE, 0); // offscreen
           dummyObject.updateMatrix();
           mesh.setMatrixAt(i, dummyObject.matrix);
         }
@@ -116,6 +116,8 @@ export function genBrush(
         previous[0] + (point[0] - previous[0]) / 2,
         previous[1] + (point[1] - previous[1]) / 2,
       ];
+      // we use perlin noise based on mouse position it's like textured paper:
+      // texture varies across the canvas but in the same spot it's always the same
       // offset it by noise * OFFSET
       const middleOffset = [
         middle[0] +
@@ -135,6 +137,8 @@ export function genBrush(
 
 // Given an line as an array of Vector2 points and a spacing in pixels, create a new line of n points with the spacing
 function resampleLineBySpacing(line: THREE.Vector2[], spacing: number) {
+  // immediately start drawing even if we have just started sampling the line
+  if (line.length === 1) return [line[0], line[0]];
   const newLine: THREE.Vector2[] = [];
   for (let i = 0; i < line.length - 1; i++) {
     const start = line[i];

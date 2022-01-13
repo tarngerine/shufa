@@ -19,7 +19,7 @@ export function setupBrush(mouse: MouseInfo): {
   update: () => void;
 } {
   const brush = new THREE.Shape();
-  brush.setFromPoints(genBrush([0, 0]));
+  brush.setFromPoints(genBrush([mouse.position.x, mouse.position.y]));
   const geometry = new THREE.ShapeGeometry(brush);
   const mesh = new THREE.InstancedMesh(geometry, material, INSTANCE_COUNT);
   mesh.visible = false;
@@ -42,7 +42,7 @@ export function setupBrush(mouse: MouseInfo): {
       mesh.visible = true;
       // Update the shared brush mesh geometry this frame
       mesh.geometry.setFromPoints(
-        genBrush([0, 0]) // set at origin because we apply matrix transform to each instance below
+        genBrush([mouse.position.x, mouse.position.y]) // mouse position only for perlin offset, we apply matrix transform to each instance below
       );
 
       const resampled = resampleLineBySpacing(trail, TRAIL_RESAMPLE_SPACING);
@@ -52,7 +52,7 @@ export function setupBrush(mouse: MouseInfo): {
       resampled.forEach((point, i) => {
         if (i < mesh.count) {
           dummyObject.position.set(point.x, point.y, 0);
-          dummyObject.rotation.set(0, 0, (i * Math.PI * 2) / INSTANCE_COUNT); // rotate brush instance to make it look more varied
+          dummyObject.rotation.set(0, 0, (i / resampled.length) * Math.PI * 2); // rotate brush instance to make it look more varied
           dummyObject.updateMatrix();
           mesh.setMatrixAt(i, dummyObject.matrix);
         }
@@ -90,19 +90,16 @@ function createLine() {
 
 // generate new array of Vector2 points for brush
 export function genBrush(
-  center: [number, number],
+  perlinOffset: [number, number], // the brush shape is generated at 0,0 but we still need some way to vary the perlin noise
   size = DEFAULT_SIZE
 ): THREE.Vector2[] {
   const points = [];
   // create COUNT points for circle
   const COUNT = 8;
 
-  const cx = center[0];
-  const cy = center[1];
-
   for (let i = 0; i < COUNT; i++) {
     const angle = (i / COUNT) * Math.PI * 2;
-    points.push([cx + size * Math.cos(angle), cy + size * Math.sin(angle)]);
+    points.push([size * Math.cos(angle), size * Math.sin(angle)]);
   }
 
   // To make a semi-realistic brush base we recursively add midpoints and offset by noise
@@ -121,8 +118,12 @@ export function genBrush(
       ];
       // offset it by noise * OFFSET
       const middleOffset = [
-        middle[0] + PERLIN.get(middle[0], middle[1]) * OFFSET,
-        middle[1] + PERLIN.get(middle[1], middle[0]) * OFFSET,
+        middle[0] +
+          PERLIN.get(middle[0] + perlinOffset[0], middle[1] + perlinOffset[1]) *
+            OFFSET,
+        middle[1] +
+          PERLIN.get(middle[1] * perlinOffset[1], middle[0] + perlinOffset[0]) *
+            OFFSET,
       ]; // we flip the perlin noise x/y bc otherwise it's always offset in the same direction and looks bad
 
       // insert new midpoint into points

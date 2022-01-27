@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { RT_OPTIONS, Sizes } from "./main";
 
 export function setupOrthoScene(): {
   scene: THREE.Scene;
@@ -92,4 +93,12 @@ export function createDataTexture(sizes: {
   );
   dt.needsUpdate = true;
   return dt;
+}
+
+export function createRT(sizes?: Sizes): THREE.WebGLRenderTarget {
+  return new THREE.WebGLRenderTarget(
+    sizes ? sizes.width : window.innerWidth,
+    sizes ? sizes.height : window.innerHeight,
+    RT_OPTIONS
+  );
 }

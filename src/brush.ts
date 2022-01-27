@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import PERLIN from "./perlin";
-import { MouseInfo } from "./utils";
+import { createRT, MouseInfo } from "./utils";
 
 const DEFAULT_SIZE = 25;
 const TRAIL_LENGTH = 5;
@@ -17,6 +17,10 @@ export function setupBrush(mouse: MouseInfo): {
   mesh: THREE.Mesh;
   line: THREE.Line;
   update: () => void;
+  render: (
+    renderer: THREE.WebGLRenderer,
+    camera: THREE.Camera
+  ) => THREE.Texture;
 } {
   const brush = new THREE.Shape();
   brush.setFromPoints(genBrush([mouse.position.x, mouse.position.y]));
@@ -30,7 +34,13 @@ export function setupBrush(mouse: MouseInfo): {
   line.visible = false; // DEBUG
   let needsReset = false;
 
-  // Runs once a frame
+  // Set up its own scene to render into to create a texture for merge shader layer
+  const scene = new THREE.Scene();
+  scene.background = null;
+  scene.add(mesh);
+  const rt = createRT();
+
+  // Runs once a frame, generates a new brush shape and maintains trail
   function update() {
     // Update brush based on mouse
     if (mouse.isDown) {
@@ -74,7 +84,20 @@ export function setupBrush(mouse: MouseInfo): {
       }
     }
   }
-  return { line, mesh, update };
+
+  // renders the brush to a texture
+  function render(
+    renderer: THREE.WebGLRenderer,
+    camera: THREE.Camera
+  ): THREE.Texture {
+    update();
+    // render brush to brush scene
+    renderer.setRenderTarget(rt);
+    renderer.render(scene, camera);
+    return rt.texture;
+  }
+
+  return { line, mesh, update, render };
 }
 
 function createLine() {

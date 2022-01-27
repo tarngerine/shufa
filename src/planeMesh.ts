@@ -1,8 +1,9 @@
 // Create a simple screen-sized Mesh that can display a material
 import * as THREE from "three";
+import { Sizes } from "./main";
 
 export function createPlaneMesh<T extends THREE.Material>(
-  sizes: { width: number; height: number },
+  sizes: Sizes,
   material: T
 ): THREE.Mesh<THREE.PlaneGeometry, T> {
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(), material);

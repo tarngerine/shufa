@@ -50,6 +50,12 @@ const mergeLayer = createShaderLayer(sizes, {
     texture2: {
       value: null,
     },
+    w: {
+      value: sizes.width,
+    },
+    h: {
+      value: sizes.height,
+    },
   },
   vertexShader: vertex,
   fragmentShader: merge,

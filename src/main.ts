@@ -1,13 +1,9 @@
 import debounce from "lodash.debounce";
 import * as THREE from "three";
-import {
-  createRT,
-  createDataTexture,
-  setupMouse,
-  setupOrthoScene,
-} from "./utils";
+import { createDataTexture, setupMouse, setupOrthoScene } from "./utils";
 import vertex from "./shaders/vertex.glsl";
 import merge from "./shaders/merge.glsl";
+import wetness from "./shaders/wetness.glsl";
 import "./style.css";
 import { setupBrush } from "./brush";
 import { createPlaneMesh } from "./planeMesh";
@@ -39,6 +35,30 @@ const outputMesh = createPlaneMesh(sizes, outputMaterial);
 scene.add(outputMesh);
 scene.add(brush.line);
 
+// Wetness texture
+const wetnessLayer = createShaderLayer(sizes, {
+  side: THREE.DoubleSide,
+  uniforms: {
+    brush: {
+      value: null,
+    },
+    prev: {
+      value: createDataTexture(sizes),
+    },
+    time: {
+      value: 0,
+    },
+    w: {
+      value: sizes.width,
+    },
+    h: {
+      value: sizes.height,
+    },
+  },
+  vertexShader: vertex,
+  fragmentShader: wetness,
+});
+
 // Layer that merges the previous frame with new brush input
 // and incorporates wetness texture to bleed out ink
 const mergeLayer = createShaderLayer(sizes, {
@@ -48,6 +68,9 @@ const mergeLayer = createShaderLayer(sizes, {
       value: null,
     },
     texture2: {
+      value: null,
+    },
+    wetness: {
       value: null,
     },
     w: {
@@ -65,9 +88,16 @@ const mergeLayer = createShaderLayer(sizes, {
 const render = () => {
   const brushTexture = brush.render(renderer, camera);
 
+  // get brushRT as texture, and previous wetness as texture
+  wetnessLayer.material.uniforms.time.value += 0.01;
+  wetnessLayer.material.uniforms.brush.value = brushTexture;
+  wetnessLayer.material.uniforms.prev.value = wetnessLayer.rts.prev.texture;
+  const wetnessTexture = wetnessLayer.render(renderer, camera);
+
   // get brushRT as texture, and previous RT as texture
   mergeLayer.material.uniforms.texture1.value = brushTexture;
   mergeLayer.material.uniforms.texture2.value = mergeLayer.rts.prev.texture;
+  mergeLayer.material.uniforms.wetness.value = wetnessTexture;
   // render the next merge RT with shader
   const nextMergeTexture = mergeLayer.render(renderer, camera);
 

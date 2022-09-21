@@ -6,6 +6,7 @@ uniform float h;
 uniform float time;
 
 uniform sampler2D brush; // Brush texture
+uniform sampler2D brush2; // Brush texture
 uniform sampler2D prev; // Previous frame texture
 uniform sampler2D wetness;  // Wetness to sample
 varying vec2 vUv;
@@ -17,10 +18,11 @@ float rand(vec2 pos) {
 
 void main() {
   vec4 brushTexel = texture2D(brush, vUv);
+  vec4 brush2Texel = texture2D(brush2, vUv);
   vec4 prevTexel = texture2D(prev, vUv);
   vec4 wetnessTexel = texture2D(wetness, vUv);
 
-  gl_FragColor = mix(prevTexel, brushTexel, brushTexel.a); // based on alpha, if brush alpha is 1.0, use brush color instead
+  gl_FragColor = mix(mix(prevTexel, brushTexel, brushTexel.a), brush2Texel, brush2Texel.a); // based on alpha, if brush alpha is 1.0, use brush color instead
 
   // if texel is wet, sample from neighbors the mode color
   if (wetnessTexel.r > 0.03) { // convert to ceil(wetnessTexel.r) with mix(a,b,ceil(wetnessTexel.r))
@@ -47,11 +49,12 @@ void main() {
     // }
 
     // step out in a random direction
-    vec2 step = vec2(rand(vUv) - .5 / (w/2.), rand(vUv) - .5 / (h / 2.));
+    vec2 step = vec2((rand(vUv) - .5) / (w/2.), (rand(vUv) - .5) / (h / 2.));
     vec4 stepBrush = texture2D(brush, vUv + step);
     vec4 stepPrev = texture2D(prev, vUv + step);
     vec4 recreatedColorForStep = mix(stepPrev, stepBrush, stepBrush.a);
-    neighbor = mix(neighbor, recreatedColorForStep, recreatedColorForStep.a);
+    // neighbor = mix(neighbor, recreatedColorForStep, recreatedColorForStep.a);
+    neighbor = mix(recreatedColorForStep, neighbor, neighbor.a);
     // neighbor = mix(neighbor, stepPrev, rand(vUv));
     gl_FragColor = neighbor;
   }

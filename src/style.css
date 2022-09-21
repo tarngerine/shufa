@@ -1,6 +1,6 @@
 @import "normalize.css";
 
 body {
-  background: #f3f5ff;
-  color: #8055fd;
+  background: radial-gradient(#45475a, rgb(12, 12, 12));
+  color: #f4ff22;
 }

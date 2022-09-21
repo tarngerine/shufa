@@ -15,8 +15,15 @@ const materialYellow = new THREE.MeshBasicMaterial({
 });
 
 const dummyObject = new THREE.Object3D(); // Used to apply transformations to and get matrix from so we don't have to do too much matrix stuff
-
-export function setupBrush(mouse: MouseInfo): {
+function flipCoord(on?: boolean) {
+  return function ([x, y]: [number, number]): [number, number] {
+    return on ? [window.innerWidth - x, window.innerHeight - y] : [x, y];
+  };
+}
+export function setupBrush(
+  mouse: MouseInfo,
+  flip?: boolean
+): {
   mesh: THREE.Mesh;
   line: THREE.Line;
   update: () => void;
@@ -25,8 +32,11 @@ export function setupBrush(mouse: MouseInfo): {
     camera: THREE.Camera
   ) => THREE.Texture;
 } {
+  const flipCoordFn = flipCoord(flip);
   const brush = new THREE.Shape();
-  brush.setFromPoints(genBrush([mouse.position.x, mouse.position.y]));
+  brush.setFromPoints(
+    genBrush(flipCoordFn([mouse.position.x, mouse.position.y]))
+  );
   const geometry = new THREE.ShapeGeometry(brush);
   const mesh = new THREE.InstancedMesh(geometry, material, INSTANCE_COUNT);
   mesh.visible = false;
@@ -60,23 +70,35 @@ export function setupBrush(mouse: MouseInfo): {
     // Update brush based on mouse)
     if (mouse.isDown) {
       betweenTrailTimer++;
-      if (betweenTrailTimer < 5) return;
+      if (betweenTrailTimer < 3) return;
+      const hsl = { h: 0, s: 0, l: 0 };
+      mesh.material.color.getHSL(hsl);
+      mesh.material.color = mesh.material.color.setHSL(
+        hsl.h,
+        hsl.s,
+        (hsl.l += (Math.random() - 0.5) * 0.01)
+      );
+      // mesh.material.dispose();
+      // mesh.material = material;
       flipMaterial = true;
       betweenTrailTimer = 0;
       needsReset = true;
       mesh.visible = true;
       // Update the shared brush mesh geometry this frame
+      const coord = flipCoordFn([mouse.position.x, mouse.position.y]);
       mesh.geometry.setFromPoints(
-        genBrush([mouse.position.x, mouse.position.y]) // mouse position only for perlin offset, we apply matrix transform to each instance below
+        genBrush(coord) // mouse position only for perlin offset, we apply matrix transform to each instance below
       );
 
       // Add latest mouse position to trail
       // trail.push(new THREE.Vector2(mouse.position.x, mouse.position.y));
+      const offsetPoint = [
+        coord[0] + (Math.random() - 0.5) * 150,
+        coord[1] + (Math.random() - 0.5) * 150,
+      ];
       trail = [
-        new THREE.Vector2(
-          mouse.position.x + (Math.random() - 0.5) * 50,
-          (Math.random() - 0.5) * 50 + mouse.position.y
-        ),
+        new THREE.Vector2(offsetPoint[0], offsetPoint[1]),
+        new THREE.Vector2(offsetPoint[0] + 4, offsetPoint[1] + 4),
       ];
       trailSpeed.push(mouse.velocity);
       if (trail.length > TRAIL_LENGTH) trail.shift();
@@ -87,8 +109,13 @@ export function setupBrush(mouse: MouseInfo): {
       // Render brush at each resampled trail point with an instance of mesh
       resampled.forEach((point, i) => {
         if (i < mesh.count) {
+          dummyObject.scale.set(
+            (Math.random() - 0.8) * 0.9 + 1,
+            (Math.random() - 0.8) * 0.9 + 1,
+            1
+          );
           dummyObject.position.set(point.x, point.y, 0);
-          dummyObject.rotation.set(0, 0, (i / resampled.length) * Math.PI * 2); // rotate brush instance to make it look more varied
+          dummyObject.rotation.set(0, 0, Math.random() * Math.PI * 2); // rotate brush instance to make it look more varied
           dummyObject.updateMatrix();
           mesh.setMatrixAt(i, dummyObject.matrix);
         }
@@ -153,8 +180,8 @@ export function genBrush(
 
   // To make a semi-realistic brush base we recursively add midpoints and offset by noise
   // instead of ending with a super spikey result we get a nicer brush shape
-  const RECURSE = 4;
-  const OFFSET = size / 2; // how much to offset each midpoint by (will be multiplied by perlin noise 0 - 1)
+  const RECURSE = 3;
+  const OFFSET = size / 4; // how much to offset each midpoint by (will be multiplied by perlin noise 0 - 1)
   for (let depth = 0; depth < RECURSE; depth++) {
     for (let i = points.length - 1; i >= 0; i--) {
       // we start from the end so we can insert with i easily without the new points mutating the current point index

@@ -25,6 +25,7 @@ scene.background = null;
 const mouse = setupMouse(renderer);
 
 const brush = setupBrush(mouse);
+const brush2 = setupBrush(mouse, true);
 
 // Mesh that displays the rendered output each frame
 const outputMaterial = new THREE.MeshBasicMaterial({
@@ -34,12 +35,16 @@ const outputMaterial = new THREE.MeshBasicMaterial({
 const outputMesh = createPlaneMesh(sizes, outputMaterial);
 scene.add(outputMesh);
 scene.add(brush.line);
+scene.add(brush2.line);
 
 // Wetness texture
 const wetnessLayer = createShaderLayer(sizes, {
   side: THREE.DoubleSide,
   uniforms: {
     brush: {
+      value: null,
+    },
+    brush2: {
       value: null,
     },
     prev: {
@@ -67,6 +72,9 @@ const mergeLayer = createShaderLayer(sizes, {
     brush: {
       value: null,
     },
+    brush2: {
+      value: null,
+    },
     prev: {
       value: null,
     },
@@ -90,16 +98,19 @@ const mergeLayer = createShaderLayer(sizes, {
 // Main render loop
 const render = () => {
   const brushTexture = brush.render(renderer, camera);
+  const brush2Texture = brush2.render(renderer, camera);
 
   // get brushRT as texture, and previous wetness as texture
   wetnessLayer.material.uniforms.time.value += 0.01;
   wetnessLayer.material.uniforms.brush.value = brushTexture;
+  wetnessLayer.material.uniforms.brush2.value = brush2Texture;
   wetnessLayer.material.uniforms.prev.value = wetnessLayer.rts.prev.texture;
   const wetnessTexture = wetnessLayer.render(renderer, camera);
 
   // get brushRT as texture, and previous RT as texture
-  mergeLayer.material.uniforms.time.value = 1;
+  mergeLayer.material.uniforms.time.value += 0.01;
   mergeLayer.material.uniforms.brush.value = brushTexture;
+  mergeLayer.material.uniforms.brush2.value = brush2Texture;
   mergeLayer.material.uniforms.prev.value = mergeLayer.rts.prev.texture;
   mergeLayer.material.uniforms.wetness.value = wetnessTexture;
   // render the next merge RT with shader

@@ -30,7 +30,8 @@ void main() {
 
   // Dilate wetness from previous frame
   vec4 maxNeighbor = vec4(0.);
-  bool go = rand(vUv) > .9;
+  bool go = rand(vUv) >
+            0.95; // the randomness helps prevent this from bleeding out forever
   if (go) {
     for (int i = -1; i <= 1; i++) {
       for (int j = -1; j <= 1; j++) {

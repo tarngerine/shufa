@@ -43,23 +43,34 @@ export function setupOrthoScene(): {
 export interface MouseInfo {
   position: THREE.Vector2;
   isDown: boolean;
+  isUp: boolean;
+  velocity: THREE.Vector2;
 }
 export function setupMouse(renderer: THREE.WebGLRenderer): MouseInfo {
   // start updating mouse coordinates
   const mouse: MouseInfo = {
     position: new THREE.Vector2(0, 0),
     isDown: false,
+    isUp: false,
+    velocity: new THREE.Vector2(0, 0),
   };
 
   function addListeners() {
     renderer.domElement.addEventListener("pointermove", (e) => {
       mouse.position.set(e.clientX, e.clientY);
+      mouse.velocity.set(e.movementX, e.movementY);
     });
     renderer.domElement.addEventListener("pointerdown", () => {
       mouse.isDown = true;
     });
     renderer.domElement.addEventListener("pointerup", () => {
       mouse.isDown = false;
+      mouse.isUp = true;
+      console.log("UP");
+      setTimeout(() => {
+        mouse.isUp = false;
+        console.log("UP end");
+      }, 100);
     });
     renderer.domElement.addEventListener("pointerout", () => {
       mouse.isDown = false;

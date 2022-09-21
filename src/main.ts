@@ -64,14 +64,17 @@ const wetnessLayer = createShaderLayer(sizes, {
 const mergeLayer = createShaderLayer(sizes, {
   side: THREE.DoubleSide,
   uniforms: {
-    texture1: {
+    brush: {
       value: null,
     },
-    texture2: {
+    prev: {
       value: null,
     },
     wetness: {
       value: null,
+    },
+    time: {
+      value: 0,
     },
     w: {
       value: sizes.width,
@@ -95,8 +98,9 @@ const render = () => {
   const wetnessTexture = wetnessLayer.render(renderer, camera);
 
   // get brushRT as texture, and previous RT as texture
-  mergeLayer.material.uniforms.texture1.value = brushTexture;
-  mergeLayer.material.uniforms.texture2.value = mergeLayer.rts.prev.texture;
+  mergeLayer.material.uniforms.time.value = 1;
+  mergeLayer.material.uniforms.brush.value = brushTexture;
+  mergeLayer.material.uniforms.prev.value = mergeLayer.rts.prev.texture;
   mergeLayer.material.uniforms.wetness.value = wetnessTexture;
   // render the next merge RT with shader
   const nextMergeTexture = mergeLayer.render(renderer, camera);

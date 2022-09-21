@@ -2,13 +2,16 @@ import * as THREE from "three";
 import PERLIN from "./perlin";
 import { createRT, MouseInfo } from "./utils";
 
-const DEFAULT_SIZE = 25;
+const DEFAULT_SIZE = 50;
 const TRAIL_LENGTH = 5;
 const TRAIL_RESAMPLE_SPACING = 5;
 const INSTANCE_COUNT = 200; // enough to support a quick stroke across screen, todo: calculate this based on window diameter/spacing
 
 const material = new THREE.MeshBasicMaterial({
-  color: 0x29f35c, // brush color
+  color: 0x8055fd, // brush color
+});
+const materialYellow = new THREE.MeshBasicMaterial({
+  color: 0xebf46d, // brush color
 });
 
 const dummyObject = new THREE.Object3D(); // Used to apply transformations to and get matrix from so we don't have to do too much matrix stuff
@@ -29,7 +32,8 @@ export function setupBrush(mouse: MouseInfo): {
   mesh.visible = false;
 
   // We use a trail to interpolate gaps between sampling frames for a smooth brush stroke
-  const trail: THREE.Vector2[] = [];
+  let trail: THREE.Vector2[] = [];
+  const trailSpeed: THREE.Vector2[] = []; // keep a history of mouse speed to derive brush dynamics (e.g. size, opacity)
   const line = createLine();
   line.visible = false; // DEBUG
   let needsReset = false;
@@ -40,10 +44,25 @@ export function setupBrush(mouse: MouseInfo): {
   scene.add(mesh);
   const rt = createRT();
 
+  let betweenTrailTimer = 0;
+  let flipMaterial = false;
   // Runs once a frame, generates a new brush shape and maintains trail
   function update() {
-    // Update brush based on mouse
+    // Swap material on mouseup
+    if (mouse.isUp && flipMaterial) {
+      const nextMaterial =
+        mesh.material === material ? materialYellow : material;
+      mesh.material.dispose();
+      mesh.material = nextMaterial;
+      mesh.material.needsUpdate = true;
+      flipMaterial = false;
+    }
+    // Update brush based on mouse)
     if (mouse.isDown) {
+      betweenTrailTimer++;
+      if (betweenTrailTimer < 5) return;
+      flipMaterial = true;
+      betweenTrailTimer = 0;
       needsReset = true;
       mesh.visible = true;
       // Update the shared brush mesh geometry this frame
@@ -52,7 +71,14 @@ export function setupBrush(mouse: MouseInfo): {
       );
 
       // Add latest mouse position to trail
-      trail.push(new THREE.Vector2(mouse.position.x, mouse.position.y));
+      // trail.push(new THREE.Vector2(mouse.position.x, mouse.position.y));
+      trail = [
+        new THREE.Vector2(
+          mouse.position.x + (Math.random() - 0.5) * 50,
+          (Math.random() - 0.5) * 50 + mouse.position.y
+        ),
+      ];
+      trailSpeed.push(mouse.velocity);
       if (trail.length > TRAIL_LENGTH) trail.shift();
 
       const resampled = resampleLineBySpacing(trail, TRAIL_RESAMPLE_SPACING);
